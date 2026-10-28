@@ -20,21 +20,51 @@ public class InMemoryMqttBroker {
     // Retained Messages: Topic -> Packet được lưu trữ cho subscriber mới
     private final Map<String, MqttPacket> retainedMessageStore = new ConcurrentHashMap<>();
 
+    // Last Will and Testament (LWT) store: ClientId -> Will Message
+    private final Map<String, MqttPacket> clientLwtStore = new ConcurrentHashMap<>();
+
     // Active Connected Clients
     private final Set<String> connectedClients = new CopyOnWriteArraySet<>();
 
     public record MqttSubscription(String clientId, String topicFilter, QoSLevel maxQos, Consumer<MqttPacket> listener) {}
 
     public synchronized void connectClient(String clientId) {
+        connectClient(clientId, null);
+    }
+
+    public synchronized void connectClient(String clientId, MqttPacket willMessage) {
         connectedClients.add(clientId);
+        if (willMessage != null) {
+            clientLwtStore.put(clientId, willMessage);
+            log.info("[MQTT Broker] Client '{}' registered with LWT on topic '{}'", clientId, willMessage.getTopic());
+        }
         log.info("[MQTT Broker] Client connected: {}", clientId);
     }
 
     public synchronized void disconnectClient(String clientId) {
+        disconnectClient(clientId, false);
+    }
+
+    public synchronized void disconnectClient(String clientId, boolean unexpected) {
         connectedClients.remove(clientId);
-        // Hủy đăng ký listener của client
         subscriptionTree.values().forEach(subSet -> subSet.removeIf(sub -> sub.clientId().equals(clientId)));
-        log.info("[MQTT Broker] Client disconnected: {}", clientId);
+
+        if (unexpected) {
+            log.warn("[MQTT Broker] Client '{}' disconnected UNEXPECTEDLY. Checking LWT...", clientId);
+            MqttPacket willMessage = clientLwtStore.remove(clientId);
+            if (willMessage != null) {
+                log.info("[MQTT Broker] Triggering LWT message for client '{}' on topic '{}'", clientId, willMessage.getTopic());
+                publish(willMessage);
+            }
+        } else {
+            // Clean disconnect: bỏ qua LWT theo đặc tả MQTT
+            clientLwtStore.remove(clientId);
+            log.info("[MQTT Broker] Client '{}' cleanly disconnected. Discarded LWT.", clientId);
+        }
+    }
+
+    public synchronized void simulateUnexpectedDisconnect(String clientId) {
+        disconnectClient(clientId, true);
     }
 
     public void subscribe(String clientId, String topicFilter, QoSLevel qos, Consumer<MqttPacket> listener) {

@@ -42,3 +42,6 @@ build/
 # Private developer tools & achievement tracking (Private to developer environment)
 scripts/
 ACHIEVEMENTS.md
+
+# Local Agent & Customizations (Private to developer machine)
+.agents/

@@ -99,11 +99,11 @@ Các module dưới đây được sắp xếp theo mức độ phổ biến gi�
 ---
 
 ## Phase 7: Giao tiếp Low-level Socket (Package `p7_socket`)
-- [ ] **7.1 Setup Module**: Khởi tạo `p7_socket`.
-- [ ] **7.2 TCP & UDP**: TCP Client/Server (NIO), UDP.
-- [ ] **7.3 The Backend way**: Xử lý Sticky packets, End of Stream.
-- [ ] **7.4 Hoàn thiện Module**: Test & `README.md` (kèm lệnh `netcat` (nc) mẫu).
-- [ ] **7.5 Giao diện UI**: Tích hợp tab Socket TCP/UDP.
+- [x] **7.1 Setup Module**: Khởi tạo `p7_socket`.
+- [x] **7.2 TCP & UDP**: TCP Client/Server (NIO), UDP.
+- [x] **7.3 The Backend way**: Xử lý Sticky packets, End of Stream.
+- [x] **7.4 Hoàn thiện Module**: Test & `README.md` (kèm lệnh `netcat` (nc) mẫu).
+- [x] **7.5 Giao diện UI**: Tích hợp tab Socket TCP/UDP.
 
 ---
 

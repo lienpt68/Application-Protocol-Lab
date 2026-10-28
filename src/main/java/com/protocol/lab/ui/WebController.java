@@ -50,4 +50,11 @@ public class WebController {
         model.addAttribute("activeTab", "phase6");
         return "phase6-mqtt";
     }
+
+    @GetMapping("/phase7")
+    public String phase7(Model model) {
+        model.addAttribute("title", "Phase 7: Socket TCP/UDP");
+        model.addAttribute("activeTab", "phase7");
+        return "phase7-socket";
+    }
 }

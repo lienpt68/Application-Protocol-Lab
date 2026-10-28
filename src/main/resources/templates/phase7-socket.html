@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: main(~{::#pageContent})}">
+<body>
+<div id="pageContent" class="fade-in">
+
+    <!-- Header Section -->
+    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; color: #f8fafc;">
+                🔌 Phase 7: Low-level Socket TCP/UDP & Packet Framing
+            </h2>
+            <p style="font-size: 0.9rem; color: #94a3b8; max-width: 850px; line-height: 1.5;">
+                Giao thức tầng truyền vận Transport Layer (L4). Phân tích sâu sự khác biệt giữa <strong>TCP Byte Stream</strong> 
+                (Tin cậy, hướng kết nối) và <strong>UDP Datagram</strong> (Không kết nối, độ trễ cực thấp). 
+                Minh họa bài toán kinh điển: <strong>TCP Sticky Packets (Dính gói)</strong> và cách hóa giải bằng 
+                <strong>Length-Field Framing</strong>.
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; color: #34d399; font-weight: 600; font-size: 0.85rem;">
+                🟢 Transport Layer (L4) NIO Engine: Ready
+            </span>
+        </div>
+    </div>
+
+    <!-- Architecture Callout -->
+    <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+        <span style="font-size: 1.8rem;">⚙️</span>
+        <div style="font-size: 0.85rem; line-height: 1.5; color: #cbd5e1;">
+            <strong style="color: #38bdf8;">The Backend Engineer Way:</strong> TCP không có khái niệm "ranh giới thông điệp" (Message Boundary), dữ liệu có thể bị dính chùm do Nagle's algorithm hoặc vỡ vụn do MTU. Chuẩn công nghiệp: Prepend 4-byte Big-Endian Length header vào trước payload để decode an toàn tuyệt đối.
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+        <!-- PANEL TRÁI: TCP Framing & Sticky Packets -->
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: #f8fafc; margin: 0;">📦 TCP Sticky Packets Resolver</h3>
+                <span style="font-size: 0.75rem; color: #38bdf8;">Length-Field Framing</span>
+            </div>
+
+            <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">
+                Nhập danh sách các tin nhắn liên tiếp (mỗi dòng 1 tin). Thử nghiệm xem TCP Stream sẽ bị dính chùm ra sao và cách Header [4B Length] bóc tách chúng.
+            </p>
+
+            <div>
+                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px;">Danh sách tin nhắn liên tiếp:</label>
+                <textarea id="tcpMessagesInput" style="width: 100%; height: 110px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-family: 'Fira Code', monospace; font-size: 0.85rem; padding: 10px; resize: vertical; box-sizing: border-box;">ORDER:ORD-1001:AMOUNT=500
+AUTH:TOKEN_USER_8821
+PAYMENT:STATUS=SUCCESS</textarea>
+            </div>
+
+            <button type="button" onclick="simulateTcpSticky()" style="background: #0284c7; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                ⚡ Gửi TCP Stream & Giải Mã Frame
+            </button>
+
+            <!-- Framing comparison view -->
+            <div id="framingResult" style="display: none; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px; font-size: 0.8rem; line-height: 1.6;">
+                <div style="color: #ef4444; margin-bottom: 6px;">
+                    ❌ <strong>Không Framing (Dính gói TCP):</strong><br>
+                    <code id="rawStickyText" style="color: #f87171; word-break: break-all;"></code>
+                </div>
+                <div style="color: #34d399; margin-top: 8px;">
+                    ✅ <strong>Đã hóa giải qua Length-Field Framing:</strong><br>
+                    <ul id="decodedList" style="margin: 4px 0 0 16px; padding: 0; color: #a7f3d0;"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL PHẢI: UDP Datagram & Hex Inspector -->
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: #f8fafc; margin: 0;">🚀 UDP Datagram Transmitter</h3>
+                <span style="font-size: 0.75rem; color: #34d399;">Connectionless (Port 9192)</span>
+            </div>
+
+            <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">
+                UDP gửi từng gói tin độc lập (Datagram Packet), không cần bắt tay 3 bước (3-way handshake) hay xác nhận (ACK).
+            </p>
+
+            <div>
+                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px;">UDP Datagram Payload:</label>
+                <input type="text" id="udpPayloadInput" value="GPS_BEACON:LAT=21.0285:LNG=105.8542:SPEED=60km/h" class="form-control" style="background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 10px; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 0.85rem;">
+            </div>
+
+            <button type="button" onclick="sendUdpPacket()" style="background: #10b981; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                📡 Bắn UDP Datagram
+            </button>
+
+            <!-- Console Log -->
+            <div>
+                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px;">L4 Packet Stream Log & Hex Dump:</label>
+                <div id="socketConsole" style="background: #0b1120; border: 1px solid #1e293b; border-radius: 6px; height: 180px; overflow-y: auto; padding: 12px; font-family: 'Fira Code', monospace; font-size: 0.75rem; color: #cbd5e1; line-height: 1.5;">
+                    <div style="color: #64748b;">[System] Socket NIO Controller initialized. Ready for L4 tests.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        function logSocket(msg, color = '#cbd5e1') {
+            const consoleBox = document.getElementById('socketConsole');
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.style.color = color;
+            line.innerHTML = `<span style="color: #64748b;">[${time}]</span> ${msg}`;
+            consoleBox.appendChild(line);
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        async function simulateTcpSticky() {
+            const rawText = document.getElementById('tcpMessagesInput').value;
+            const messages = rawText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+
+            try {
+                const res = await fetch('/api/socket/tcp/sticky-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages })
+                });
+                const data = await res.json();
+
+                // Hiển thị panel so sánh
+                document.getElementById('framingResult').style.display = 'block';
+                document.getElementById('rawStickyText').innerText = data.stickyWithoutFraming;
+
+                const list = document.getElementById('decodedList');
+                list.innerHTML = '';
+                data.decodedMessages.forEach(msg => {
+                    const li = document.createElement('li');
+                    li.innerText = msg;
+                    list.appendChild(li);
+                });
+
+                logSocket(`[TCP] Transmitted ${messages.length} messages. Length-Field framing successfully decoded ${data.decodedMessages.length} discrete messages.`, '#38bdf8');
+                logSocket(`[TCP HEX] ${data.framedHex}`, '#f59e0b');
+            } catch (err) {
+                logSocket(`[ERROR] TCP Test failed: ${err.message}`, '#ef4444');
+            }
+        }
+
+        async function sendUdpPacket() {
+            const message = document.getElementById('udpPayloadInput').value;
+            try {
+                const res = await fetch('/api/socket/udp/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                logSocket(`[UDP] Datagram (${data.sizeBytes} bytes) delivered to Port 9192. Connectionless fire-and-forget.`, '#34d399');
+                logSocket(`[UDP HEX] ${data.hexDump}`, '#a7f3d0');
+            } catch (err) {
+                logSocket(`[ERROR] UDP Send failed: ${err.message}`, '#ef4444');
+            }
+        }
+    </script>
+</div>
+</body>
+</html>

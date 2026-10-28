@@ -43,4 +43,11 @@ public class WebController {
         model.addAttribute("activeTab", "phase5");
         return "phase5-grpc";
     }
+
+    @GetMapping("/phase6")
+    public String phase6(Model model) {
+        model.addAttribute("title", "Phase 6: MQTT");
+        model.addAttribute("activeTab", "phase6");
+        return "phase6-mqtt";
+    }
 }

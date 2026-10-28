@@ -1,0 +1,51 @@
+type Query {
+    products(category: Category, minPrice: Float, maxPrice: Float): [Product!]!
+    productById(id: ID!): Product
+    categories: [Category!]!
+}
+
+type Mutation {
+    createProduct(input: ProductInput!): Product!
+    addReview(input: ReviewInput!): Review!
+    deleteProduct(id: ID!): Boolean!
+}
+
+enum Category {
+    ELECTRONICS
+    FASHION
+    BOOKS
+    HOME
+}
+
+type Product {
+    id: ID!
+    name: String!
+    description: String
+    price: Float!
+    category: Category!
+    reviews: [Review!]!
+    rating: Float!
+}
+
+type Review {
+    id: ID!
+    productId: ID!
+    author: String!
+    comment: String!
+    score: Int!
+    createdAt: String!
+}
+
+input ProductInput {
+    name: String!
+    description: String
+    price: Float!
+    category: Category!
+}
+
+input ReviewInput {
+    productId: ID!
+    author: String!
+    comment: String!
+    score: Int!
+}

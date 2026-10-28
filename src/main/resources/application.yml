@@ -8,6 +8,13 @@ spring:
       max-request-size: 10MB
   application:
     name: Application-Protocol-Lab
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    schema:
+      printer:
+        enabled: true
 
 logging:
   level:

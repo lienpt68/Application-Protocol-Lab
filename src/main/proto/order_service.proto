@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package com.protocol.lab.p5_grpc;
+
+option java_multiple_files = true;
+option java_package = "com.protocol.lab.p5_grpc.generated";
+option java_outer_classname = "OrderServiceProto";
+
+// Service định nghĩa đủ 4 mô hình giao tiếp gRPC chuẩn Microservices
+service OrderGrpcService {
+    // 1. Unary RPC: 1 Request -> 1 Response
+    rpc CreateOrder (CreateOrderRequest) returns (OrderResponse);
+    rpc GetOrder (OrderIdRequest) returns (OrderResponse);
+
+    // 2. Server Streaming RPC: 1 Request -> Luồng Response liên tục
+    rpc StreamOrderStatus (OrderIdRequest) returns (stream OrderStatusUpdate);
+
+    // 3. Client Streaming RPC: Luồng Request -> 1 Response tổng hợp
+    rpc UploadOrderTelemetry (stream TelemetryPoint) returns (TelemetrySummary);
+
+    // 4. Bidirectional Streaming RPC: 2 chiều độc lập (Full-duplex)
+    rpc LiveDeliveryChannel (stream DeliveryEvent) returns (stream DeliveryEvent);
+}
+
+message CreateOrderRequest {
+    string customerId = 1;
+    string itemSku = 2;
+    int32 quantity = 3;
+    double price = 4;
+}
+
+message OrderIdRequest {
+    string orderId = 1;
+}
+
+message OrderResponse {
+    string orderId = 1;
+    string customerId = 2;
+    string itemSku = 3;
+    int32 quantity = 4;
+    double totalAmount = 5;
+    string status = 6;
+    string createdAt = 7;
+}
+
+message OrderStatusUpdate {
+    string orderId = 1;
+    string stage = 2;
+    string message = 3;
+    int64 timestamp = 4;
+}
+
+message TelemetryPoint {
+    string orderId = 1;
+    double latitude = 2;
+    double longitude = 3;
+    double speedKmh = 4;
+    double batteryLevel = 5;
+    int64 timestamp = 6;
+}
+
+message TelemetrySummary {
+    string orderId = 1;
+    int32 totalPointsReceived = 2;
+    double averageSpeedKmh = 3;
+    double maxSpeedKmh = 4;
+    string status = 5;
+}
+
+message DeliveryEvent {
+    string orderId = 1;
+    string sender = 2;
+    string payload = 3;
+    int64 timestamp = 4;
+}

@@ -16,8 +16,19 @@ spring:
       printer:
         enabled: true
 
+# Phase 5: gRPC Server & Client Configuration
+grpc:
+  server:
+    port: 9090
+  client:
+    orderService:
+      address: 'static://localhost:9090'
+      negotiationType: PLAINTEXT
+
 logging:
   level:
     root: INFO
     com.protocol.lab: DEBUG
     org.springframework.web: INFO
+    io.grpc: INFO
+    net.devh.boot.grpc: INFO

@@ -93,8 +93,8 @@ Các module dưới đây được sắp xếp theo mức độ phổ biến gi�
 - [x] **6.1 Setup Module**: Khởi tạo `p6_mqtt`, tạo Mosquitto Broker qua `docker-compose.yml`.
 - [x] **6.2 Thực thi Pub/Sub**: Publisher, Subscriber.
 - [x] **6.3 The System Engineer way**: QoS 0/1/2, LWT (Last Will), Retained Messages.
-- [ ] **6.4 Hoàn thiện Module**: Test & `README.md` (kèm lệnh `mosquitto_pub` / raw payload để test).
-- [ ] **6.5 Giao diện UI**: Tích hợp tab MQTT, mô phỏng thiết bị IoT gửi nhận dữ liệu.
+- [x] **6.4 Hoàn thiện Module**: Test & `README.md` (kèm lệnh `mosquitto_pub` / raw payload để test).
+- [x] **6.5 Giao diện UI**: Tích hợp tab MQTT, mô phỏng thiết bị IoT gửi nhận dữ liệu.
 
 ---
 

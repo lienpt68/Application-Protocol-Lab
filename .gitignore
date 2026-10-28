@@ -38,3 +38,8 @@ build/
 ### Others ###
 *.log
 *.class
+
+# Local Agent & Automation (Private to developer environment)
+.agents/
+scripts/
+ACHIEVEMENTS.md

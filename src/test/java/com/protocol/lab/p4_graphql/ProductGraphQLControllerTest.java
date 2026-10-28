@@ -1,5 +1,6 @@
 package com.protocol.lab.p4_graphql;
 
+import com.protocol.lab.p4_graphql.config.GraphQLSecurityConfig;
 import com.protocol.lab.p4_graphql.controller.ProductGraphQLController;
 import com.protocol.lab.p4_graphql.model.Category;
 import com.protocol.lab.p4_graphql.model.Product;
@@ -14,15 +15,15 @@ import org.springframework.graphql.test.tester.GraphQlTester;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @GraphQlTest(ProductGraphQLController.class)
-@Import(ProductRepository.class)
+@Import({ProductRepository.class, GraphQLSecurityConfig.class})
 class ProductGraphQLControllerTest {
 
     @Autowired
     private GraphQlTester graphQlTester;
 
     @Test
-    @DisplayName("Should query all products with nested reviews and computed rating")
-    void shouldQueryProducts() {
+    @DisplayName("Should query all products with nested reviews resolved via @BatchMapping")
+    void shouldQueryProductsWithBatchMapping() {
         String document = """
             query {
                 products {
@@ -32,8 +33,10 @@ class ProductGraphQLControllerTest {
                     category
                     rating
                     reviews {
+                        id
                         author
                         score
+                        comment
                     }
                 }
             }
@@ -45,7 +48,10 @@ class ProductGraphQLControllerTest {
                 .entityList(Product.class)
                 .satisfies(products -> {
                     assertThat(products).isNotEmpty();
-                    assertThat(products.get(0).getName()).isNotBlank();
+                    Product first = products.get(0);
+                    assertThat(first.getName()).isNotBlank();
+                    assertThat(first.getReviews()).isNotEmpty();
+                    assertThat(first.getRating()).isGreaterThan(0.0);
                 });
     }
 
@@ -58,6 +64,7 @@ class ProductGraphQLControllerTest {
                     id
                     name
                     category
+                    rating
                 }
             }
         """;
@@ -66,7 +73,10 @@ class ProductGraphQLControllerTest {
                 .execute()
                 .path("productById.name")
                 .entity(String.class)
-                .isEqualTo("MacBook Pro 16 M3 Max");
+                .isEqualTo("MacBook Pro 16 M3 Max")
+                .path("productById.rating")
+                .entity(Double.class)
+                .isEqualTo(4.5);
     }
 
     @Test
@@ -96,5 +106,34 @@ class ProductGraphQLControllerTest {
                 .path("createProduct.category")
                 .entity(Category.class)
                 .isEqualTo(Category.BOOKS);
+    }
+
+    @Test
+    @DisplayName("Should add review via mutation and update product rating")
+    void shouldAddReview() {
+        String addReviewMutation = """
+            mutation {
+                addReview(input: {
+                    productId: "PROD-103",
+                    author: "Developer-X",
+                    comment: "Super smooth typing experience!",
+                    score: 5
+                }) {
+                    id
+                    productId
+                    author
+                    score
+                }
+            }
+        """;
+
+        graphQlTester.document(addReviewMutation)
+                .execute()
+                .path("addReview.author")
+                .entity(String.class)
+                .isEqualTo("Developer-X")
+                .path("addReview.score")
+                .entity(Integer.class)
+                .isEqualTo(5);
     }
 }

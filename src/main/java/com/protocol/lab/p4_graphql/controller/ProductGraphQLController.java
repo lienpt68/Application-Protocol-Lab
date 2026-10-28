@@ -5,12 +5,13 @@ import com.protocol.lab.p4_graphql.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.BatchMapping;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Controller
@@ -37,6 +38,32 @@ public class ProductGraphQLController {
     public List<Category> categories() {
         log.info("GraphQL Query: categories");
         return productRepository.findAllCategories();
+    }
+
+    /**
+     * The Data Engineer Way: Giải quyết triệt để bài toán N+1 Query trong GraphQL.
+     * Thay vì gọi N queries tới DB cho từng Product để lấy reviews,
+     * @BatchMapping gom toàn bộ danh sách products vào 1 lần gọi duy nhất qua DataLoader pattern.
+     */
+    @BatchMapping(typeName = "Product", field = "reviews")
+    public Map<Product, List<Review>> reviews(List<Product> products) {
+        log.info("[DataLoader BatchMapping] Batch loading reviews for {} products in 1 batch call", products.size());
+        List<String> productIds = products.stream().map(Product::getId).toList();
+        Map<String, List<Review>> reviewsByProductId = productRepository.findReviewsForProducts(productIds);
+
+        Map<Product, List<Review>> result = new HashMap<>();
+        for (Product p : products) {
+            result.put(p, reviewsByProductId.getOrDefault(p.getId(), Collections.emptyList()));
+        }
+        return result;
+    }
+
+    @SchemaMapping(typeName = "Product", field = "rating")
+    public Double rating(Product product) {
+        List<Review> revs = productRepository.findReviewsByProductId(product.getId());
+        if (revs.isEmpty()) return 0.0;
+        double sum = revs.stream().mapToInt(Review::getScore).sum();
+        return Math.round((sum / revs.size()) * 10.0) / 10.0;
     }
 
     @MutationMapping

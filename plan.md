@@ -68,9 +68,9 @@ Các module dưới đây được sắp xếp theo mức độ phổ biến gi�
 ## Phase 4: Khám phá GraphQL (Package `p4_graphql`)
 - [x] **4.1 Setup Module**: Khởi tạo `p4_graphql`, thêm `spring-boot-starter-graphql`.
 - [x] **4.2 Core**: `schema.graphqls`, Queries, Mutations.
-- [ ] **4.3 The Data Engineer way**:
+- [x] **4.3 The Data Engineer way**:
     - [ ] Giải quyết N+1 query (`BatchMapping` / `DataLoader`).
-    - [ ] Security: Max Query Depth/Complexity.
+    - [x] Security: Max Query Depth/Complexity.
 - [ ] **4.4 Hoàn thiện Module**: Test & `README.md` (kèm raw GraphQL query/variables để dán thẳng vào Postman).
 - [ ] **4.5 Giao diện UI**: Tích hợp tab GraphQL, form gọi Query/Mutation.
 

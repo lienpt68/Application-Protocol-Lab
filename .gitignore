@@ -39,7 +39,6 @@ build/
 *.log
 *.class
 
-# Local Agent & Automation (Private to developer environment)
-.agents/
+# Private developer tools & achievement tracking (Private to developer environment)
 scripts/
 ACHIEVEMENTS.md

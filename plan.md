@@ -77,9 +77,9 @@ Các module dưới đây được sắp xếp theo mức độ phổ biến gi�
 ---
 
 ## Phase 5: Khám phá gRPC & Protobuf (Package `p5_grpc`) - Phổ biến trong BE-BE Microservices
-- [ ] **5.1 Setup Module**: Khởi tạo `p5_grpc`, tích hợp `grpc-spring-boot-starter` và Protobuf Maven Plugin.
-- [ ] **5.2 Định nghĩa IDL**: Tạo `schema.proto`.
-- [ ] **5.3 Thực thi 4 mô hình gRPC**: `unary`, `server-streaming`, `client-streaming`, `bidirectional-streaming`.
+- [x] **5.1 Setup Module**: Khởi tạo `p5_grpc`, tích hợp `grpc-spring-boot-starter` và Protobuf Maven Plugin.
+- [x] **5.2 Định nghĩa IDL**: Tạo `schema.proto`.
+- [x] **5.3 Thực thi 4 mô hình gRPC**: `unary`, `server-streaming`, `client-streaming`, `bidirectional-streaming`.
 - [ ] **5.4 The Backend Engineer way**:
     - [ ] **Error Handling**: Mapping StatusRuntimeException.
     - [ ] **Deadlines/Timeouts**: Cấu hình gRPC Deadlines.

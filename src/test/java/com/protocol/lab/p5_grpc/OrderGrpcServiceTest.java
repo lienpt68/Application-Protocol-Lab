@@ -3,8 +3,12 @@ package com.protocol.lab.p5_grpc;
 import com.protocol.lab.p5_grpc.generated.*;
 import com.protocol.lab.p5_grpc.repository.OrderRepository;
 import com.protocol.lab.p5_grpc.service.OrderGrpcServiceImpl;
+import com.protocol.lab.p5_grpc.interceptor.LogAndTraceServerInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
+import io.grpc.ServerInterceptors;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -35,9 +39,11 @@ class OrderGrpcServiceTest {
         OrderRepository orderRepository = new OrderRepository();
         OrderGrpcServiceImpl service = new OrderGrpcServiceImpl(orderRepository);
 
+        LogAndTraceServerInterceptor interceptor = new LogAndTraceServerInterceptor();
+
         inProcessServer = InProcessServerBuilder.forName(serverName)
                 .directExecutor()
-                .addService(service)
+                .addService(ServerInterceptors.intercept(service, interceptor))
                 .build()
                 .start();
 
@@ -184,5 +190,17 @@ class OrderGrpcServiceTest {
         assertThat(receivedReplies).hasSize(2);
         assertThat(receivedReplies.get(0).getSender()).isEqualTo("ORDER_DISPATCH_SYSTEM");
         assertThat(receivedReplies.get(0).getPayload()).contains("Courier picked up package");
+    }
+
+    @Test
+    @DisplayName("5. The Backend Engineer Way: Heavy RPC hủy ngang khi vượt quá gRPC Deadline")
+    void testProcessHeavyOrderDeadlineExceeded() {
+        // Thiết lập deadline siêu ngắn 100ms trong khi xử lý cần ~750ms
+        try {
+            blockingStub.withDeadlineAfter(100, TimeUnit.MILLISECONDS)
+                    .processHeavyOrder(OrderIdRequest.newBuilder().setOrderId("ORD-DEADLINE-01").build());
+        } catch (StatusRuntimeException e) {
+            assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.DEADLINE_EXCEEDED);
+        }
     }
 }

@@ -6,7 +6,7 @@ option java_multiple_files = true;
 option java_package = "com.protocol.lab.p5_grpc.generated";
 option java_outer_classname = "OrderServiceProto";
 
-// Service định nghĩa đủ 4 mô hình giao tiếp gRPC chuẩn Microservices
+// Service định nghĩa đủ 4 mô hình giao tiếp gRPC chuẩn Microservices + Deadlines
 service OrderGrpcService {
     // 1. Unary RPC: 1 Request -> 1 Response
     rpc CreateOrder (CreateOrderRequest) returns (OrderResponse);
@@ -20,6 +20,9 @@ service OrderGrpcService {
 
     // 4. Bidirectional Streaming RPC: 2 chiều độc lập (Full-duplex)
     rpc LiveDeliveryChannel (stream DeliveryEvent) returns (stream DeliveryEvent);
+
+    // 5. Heavy RPC: Mô phỏng xử lý lâu để kiểm chứng gRPC Deadlines / Timeouts
+    rpc ProcessHeavyOrder (OrderIdRequest) returns (OrderResponse);
 }
 
 message CreateOrderRequest {

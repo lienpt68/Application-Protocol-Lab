@@ -1,7 +1,9 @@
 package com.protocol.lab.p5_grpc.service;
 
+import com.protocol.lab.p5_grpc.exception.OrderNotFoundException;
 import com.protocol.lab.p5_grpc.generated.*;
 import com.protocol.lab.p5_grpc.repository.OrderRepository;
+import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -111,8 +113,6 @@ public class OrderGrpcServiceImpl extends OrderGrpcServiceGrpc.OrderGrpcServiceI
                 if (point.getSpeedKmh() > maxSpeed) {
                     maxSpeed = point.getSpeedKmh();
                 }
-                log.debug("[gRPC Client Streaming] Received telemetry point #{}: lat={}, lng={}, speed={}",
-                        pointCount, point.getLatitude(), point.getLongitude(), point.getSpeedKmh());
             }
 
             @Override
@@ -172,5 +172,43 @@ public class OrderGrpcServiceImpl extends OrderGrpcServiceGrpc.OrderGrpcServiceI
                 responseObserver.onCompleted();
             }
         };
+    }
+
+    /**
+     * 5. The Backend Engineer Way: Heavy RPC với kiểm tra gRPC Deadline / Cancellation
+     */
+    @Override
+    public void processHeavyOrder(OrderIdRequest request, StreamObserver<OrderResponse> responseObserver) {
+        log.info("[gRPC Deadlines] Starting heavy processing for orderId={}", request.getOrderId());
+        long start = System.currentTimeMillis();
+
+        for (int i = 0; i < 5; i++) {
+            if (Context.current().isCancelled()) {
+                log.warn("[gRPC Deadlines] Call cancelled or Deadline exceeded by client! Aborting work immediately.");
+                responseObserver.onError(Status.DEADLINE_EXCEEDED
+                        .withDescription("Processing aborted due to client deadline exceeded")
+                        .asRuntimeException());
+                return;
+            }
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+
+        OrderResponse response = OrderResponse.newBuilder()
+                .setOrderId(request.getOrderId())
+                .setCustomerId("HEAVY-SYSTEM")
+                .setItemSku("HIGH-DENSITY-COMPUTE-NODE")
+                .setQuantity(1)
+                .setTotalAmount(9999.0)
+                .setStatus("HEAVY_PROCESSING_COMPLETED")
+                .setCreatedAt(System.currentTimeMillis() - start + "ms")
+                .build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 }

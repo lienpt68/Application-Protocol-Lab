@@ -29,4 +29,11 @@ public class WebController {
         model.addAttribute("activeTab", "phase3");
         return "phase3-socketio";
     }
+
+    @GetMapping("/phase4")
+    public String phase4(Model model) {
+        model.addAttribute("title", "Phase 4: GraphQL");
+        model.addAttribute("activeTab", "phase4");
+        return "phase4-graphql";
+    }
 }

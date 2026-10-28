@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: main(~{::#pageContent})}">
+<body>
+<div id="pageContent" class="fade-in">
+
+    <!-- Header Section -->
+    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; color: #f8fafc;">
+                ⚛️ Phase 4: GraphQL (Flexible Query & Batch DataLoader)
+            </h2>
+            <p style="font-size: 0.9rem; color: #94a3b8; max-width: 800px; line-height: 1.5;">
+                GraphQL cho phép Client tự định nghĩa cấu trúc dữ liệu cần nhận (tránh over-fetching và under-fetching). 
+                Module này tích hợp <strong>@BatchMapping</strong> giải quyết triệt để bài toán <strong>N+1 Query</strong> và 
+                <strong>MaxQueryDepthInstrumentation</strong> ngăn chặn tấn công DoS.
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="/graphiql" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                🚀 Mở GraphiQL Studio
+            </a>
+        </div>
+    </div>
+
+    <!-- Architecture Callout -->
+    <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+        <span style="font-size: 1.8rem;">💡</span>
+        <div style="font-size: 0.85rem; line-height: 1.5; color: #cbd5e1;">
+            <strong style="color: #60a5fa;">The Data Engineer Way:</strong> Khi truy vấn lồng <code>products { reviews { ... } }</code>, hệ thống KHÔNG gọi N câu query riêng lẻ. Cơ chế <code>@BatchMapping</code> gom toàn bộ IDs và chỉ thực hiện đúng <strong>1 Batch Query duy nhất</strong> (sử dụng <code>WHERE IN (...)</code>) qua DataLoader pattern.
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px;">
+
+        <!-- ================= PANEL TRÁI: QUERY RUNNER ================= -->
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: #f8fafc; margin: 0;">🔍 GraphQL Query Runner</h3>
+                <span id="queryLatency" style="font-size: 0.75rem; color: #94a3b8;">Sẵn sàng</span>
+            </div>
+
+            <!-- Presets Selector -->
+            <div>
+                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 6px;">Chọn câu Query mẫu:</label>
+                <select id="queryPreset" class="form-control" style="background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; width: 100%; font-size: 0.85rem;" onchange="loadPreset()">
+                    <option value="allProducts">1. Lấy tất cả Products + Reviews (Kích hoạt @BatchMapping)</option>
+                    <option value="filteredProducts">2. Lọc Products theo Category & Giá (Sử dụng Variables)</option>
+                    <option value="singleProduct">3. Lấy chi tiết Product theo ID</option>
+                    <option value="categories">4. Danh mục Categories hỗ trợ</option>
+                    <option value="deepQuery">5. Thử nghiệm Query vượt giới hạn Depth (Bảo mật)</option>
+                </select>
+            </div>
+
+            <!-- Query Editor -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="font-size: 0.8rem; color: #94a3b8;">GraphQL Query Document:</label>
+                    <button type="button" onclick="formatEditor()" style="background: none; border: none; color: #60a5fa; cursor: pointer; font-size: 0.75rem;">Format</button>
+                </div>
+                <textarea id="graphqlQuery" rows="9" style="width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px; color: #38bdf8; font-family: 'Fira Code', monospace; font-size: 0.82rem; resize: vertical; outline: none;"></textarea>
+            </div>
+
+            <!-- Variables Editor -->
+            <div>
+                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px;">GraphQL Variables (JSON):</label>
+                <textarea id="graphqlVariables" rows="3" style="width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px; color: #a78bfa; font-family: 'Fira Code', monospace; font-size: 0.8rem; resize: vertical; outline: none;"></textarea>
+            </div>
+
+            <!-- Action Button -->
+            <button id="btnExecuteQuery" class="btn btn-primary" onclick="executeQuery()" style="background: #3b82f6; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s;">
+                ⚡ Thực thi Query (Gửi POST /graphql)
+            </button>
+
+            <!-- Response Viewer -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="font-size: 0.8rem; color: #94a3b8;">Kết quả phản hồi (JSON Response):</label>
+                    <button type="button" onclick="clearResponse()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem;">Clear</button>
+                </div>
+                <pre id="queryResult" style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px; color: #10b981; font-family: 'Fira Code', monospace; font-size: 0.8rem; height: 260px; overflow-y: auto; margin: 0; white-space: pre-wrap; word-break: break-all;">Chờ thực thi...</pre>
+            </div>
+        </div>
+
+        <!-- ================= PANEL PHẢI: MUTATIONS & LAB INTERACTION ================= -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+
+            <!-- Mutation 1: Thêm sản phẩm mới -->
+            <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px;">
+                <h3 style="font-size: 1rem; font-weight: 600; color: #f8fafc; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>📦</span> Mutation: Thêm Sản phẩm (createProduct)
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div>
+                        <input type="text" id="mutProdName" class="form-control" placeholder="Tên sản phẩm (VD: iPad Pro M4)" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                    </div>
+                    <div>
+                        <input type="text" id="mutProdDesc" class="form-control" placeholder="Mô tả sản phẩm" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="mutProdPrice" class="form-control" placeholder="Giá (USD)" step="0.01" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                        <select id="mutProdCategory" class="form-control" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                            <option value="ELECTRONICS">ELECTRONICS</option>
+                            <option value="BOOKS">BOOKS</option>
+                            <option value="FASHION">FASHION</option>
+                            <option value="HOME">HOME</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="submitCreateProduct()" style="background: #10b981; color: white; border: none; padding: 9px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                        ➕ Thực thi Mutation Create Product
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mutation 2: Thêm đánh giá (addReview) -->
+            <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px;">
+                <h3 style="font-size: 1rem; font-weight: 600; color: #f8fafc; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>⭐</span> Mutation: Đánh giá Sản phẩm (addReview)
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="mutRevProdId" class="form-control" value="PROD-101" placeholder="Product ID (VD: PROD-101)" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                        <input type="text" id="mutRevAuthor" class="form-control" placeholder="Tên tác giả" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="mutRevComment" class="form-control" placeholder="Bình luận đánh giá" style="flex: 2; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                        <select id="mutRevScore" class="form-control" style="flex: 1; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                            <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                            <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                            <option value="3">⭐⭐⭐ (3/5)</option>
+                            <option value="2">⭐⭐ (2/5)</option>
+                            <option value="1">⭐ (1/5)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="submitAddReview()" style="background: #f59e0b; color: white; border: none; padding: 9px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                        ✍️ Thực thi Mutation Add Review
+                    </button>
+                </div>
+            </div>
+
+            <!-- Security & Performance Specs Card -->
+            <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px;">
+                <h4 style="font-size: 0.9rem; font-weight: 600; color: #cbd5e1; margin-top: 0; margin-bottom: 8px;">
+                    🛡️ Thông số Kỹ thuật & Bảo mật
+                </h4>
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.8rem; color: #94a3b8; display: flex; flex-direction: column; gap: 6px;">
+                    <li>• <strong>Endpoint chính:</strong> <code>POST /graphql</code></li>
+                    <li>• <strong>N+1 Resolver:</strong> <code>@BatchMapping(typeName = "Product", field = "reviews")</code></li>
+                    <li>• <strong>Max Query Depth:</strong> <code>8 tầng</code> (Ngăn cyclic query loop)</li>
+                    <li>• <strong>In-Memory Engine:</strong> <code>ConcurrentHashMap</code> (Zero lag, zero latency)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script tương tác nằm trọn vẹn trong #pageContent theo quy chuẩn -->
+    <script>
+        const presets = {
+            allProducts: {
+                query: `query GetAllProductsWithReviews {\n  products {\n    id\n    name\n    price\n    category\n    rating\n    reviews {\n      id\n      author\n      comment\n      score\n      createdAt\n    }\n  }\n}`,
+                variables: `{}`
+            },
+            filteredProducts: {
+                query: `query GetFilteredProducts($category: Category, $minPrice: Float, $maxPrice: Float) {\n  products(category: $category, minPrice: $minPrice, maxPrice: $maxPrice) {\n    id\n    name\n    price\n    category\n    rating\n  }\n}`,
+                variables: `{\n  "category": "ELECTRONICS",\n  "minPrice": 100.0,\n  "maxPrice": 4000.0\n}`
+            },
+            singleProduct: {
+                query: `query GetProductById($id: ID!) {\n  productById(id: $id) {\n    id\n    name\n    description\n    price\n    category\n    rating\n    reviews {\n      author\n      score\n      comment\n    }\n  }\n}`,
+                variables: `{\n  "id": "PROD-101"\n}`
+            },
+            categories: {
+                query: `query GetCategories {\n  categories\n}`,
+                variables: `{}`
+            },
+            deepQuery: {
+                query: `query DeepCyclicTest {\n  products {\n    reviews {\n      score\n    }\n  }\n}`,
+                variables: `{}`
+            }
+        };
+
+        function loadPreset() {
+            const key = document.getElementById('queryPreset').value;
+            const p = presets[key];
+            if (p) {
+                document.getElementById('graphqlQuery').value = p.query;
+                document.getElementById('graphqlVariables').value = p.variables;
+            }
+        }
+
+        async function executeQuery() {
+            const query = document.getElementById('graphqlQuery').value.trim();
+            const rawVars = document.getElementById('graphqlVariables').value.trim();
+            const resultBox = document.getElementById('queryResult');
+            const latencyBox = document.getElementById('queryLatency');
+
+            if (!query) {
+                alert('Vui lòng nhập GraphQL query!');
+                return;
+            }
+
+            let variables = {};
+            if (rawVars) {
+                try {
+                    variables = JSON.parse(rawVars);
+                } catch (e) {
+                    alert('Lỗi cú pháp JSON trong GraphQL Variables: ' + e.message);
+                    return;
+                }
+            }
+
+            resultBox.textContent = 'Đang truy vấn tới /graphql...';
+            latencyBox.textContent = 'Đang gọi...';
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch('/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ query, variables })
+                });
+
+                const duration = Math.round(performance.now() - startTime);
+                const data = await response.json();
+
+                resultBox.textContent = JSON.stringify(data, null, 2);
+                if (data.errors && data.errors.length > 0) {
+                    resultBox.style.color = '#ef4444';
+                    latencyBox.textContent = `Lỗi (${duration}ms)`;
+                } else {
+                    resultBox.style.color = '#10b981';
+                    latencyBox.textContent = `Thành công 200 OK (${duration}ms)`;
+                }
+            } catch (err) {
+                const duration = Math.round(performance.now() - startTime);
+                resultBox.style.color = '#ef4444';
+                resultBox.textContent = 'Network Error: ' + err.message;
+                latencyBox.textContent = `Lỗi (${duration}ms)`;
+            }
+        }
+
+        async function submitCreateProduct() {
+            const name = document.getElementById('mutProdName').value.trim();
+            const description = document.getElementById('mutProdDesc').value.trim();
+            const price = parseFloat(document.getElementById('mutProdPrice').value);
+            const category = document.getElementById('mutProdCategory').value;
+
+            if (!name || isNaN(price)) {
+                alert('Vui lòng điền đủ tên và giá sản phẩm!');
+                return;
+            }
+
+            const query = `mutation CreateProduct($input: ProductInput!) {\n  createProduct(input: $input) {\n    id\n    name\n    price\n    category\n  }\n}`;
+            const variables = { input: { name, description, price, category } };
+
+            document.getElementById('graphqlQuery').value = query;
+            document.getElementById('graphqlVariables').value = JSON.stringify(variables, null, 2);
+            await executeQuery();
+        }
+
+        async function submitAddReview() {
+            const productId = document.getElementById('mutRevProdId').value.trim();
+            const author = document.getElementById('mutRevAuthor').value.trim();
+            const comment = document.getElementById('mutRevComment').value.trim();
+            const score = parseInt(document.getElementById('mutRevScore').value);
+
+            if (!productId || !author || !comment) {
+                alert('Vui lòng điền đủ Product ID, Tác giả và Bình luận!');
+                return;
+            }
+
+            const query = `mutation AddReview($input: ReviewInput!) {\n  addReview(input: $input) {\n    id\n    productId\n    author\n    comment\n    score\n    createdAt\n  }\n}`;
+            const variables = { input: { productId, author, comment, score } };
+
+            document.getElementById('graphqlQuery').value = query;
+            document.getElementById('graphqlVariables').value = JSON.stringify(variables, null, 2);
+            await executeQuery();
+        }
+
+        function clearResponse() {
+            document.getElementById('queryResult').textContent = 'Đã xóa.';
+            document.getElementById('queryLatency').textContent = 'Sẵn sàng';
+        }
+
+        // Khởi tạo preset ban đầu
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPreset();
+        });
+    </script>
+</div>
+</body>
+</html>

@@ -71,8 +71,8 @@ Các module dưới đây được sắp xếp theo mức độ phổ biến gi�
 - [x] **4.3 The Data Engineer way**:
     - [ ] Giải quyết N+1 query (`BatchMapping` / `DataLoader`).
     - [x] Security: Max Query Depth/Complexity.
-- [ ] **4.4 Hoàn thiện Module**: Test & `README.md` (kèm raw GraphQL query/variables để dán thẳng vào Postman).
-- [ ] **4.5 Giao diện UI**: Tích hợp tab GraphQL, form gọi Query/Mutation.
+- [x] **4.4 Hoàn thiện Module**: Test & `README.md` (kèm raw GraphQL query/variables để dán thẳng vào Postman).
+- [x] **4.5 Giao diện UI**: Tích hợp tab GraphQL, form gọi Query/Mutation.
 
 ---
 

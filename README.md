@@ -18,12 +18,15 @@ Hệ thống lab chuẩn hóa các mô hình giao tiếp Application-to-Applicat
 | **04** | `04-graphql` | GraphQL | `:8080/graphql` | `@BatchMapping` (DataLoader giải quyết N+1), Max Query Depth |
 | **05** | `05-grpc` | gRPC / Protobuf | `:9090` | 4 mô hình Streaming, Deadlines/Cancellation, Trace Interceptor |
 | **06** | `06-mqtt` | MQTT | `:1883` | Pub/Sub, QoS 0/1/2, Last Will (LWT), Retained Messages |
-| **07** | `07-socket` | TCP/UDP Socket | `:9001` (TCP) / `:9002` (UDP) | Java NIO, Xử lý Sticky Packets (Length-Field Framing) |
+| **07** | `07-socket` | TCP/UDP Socket | `:9191` (TCP) / `:9192` (UDP) | Java NIO, Xử lý Sticky Packets (Length-Field Framing) |
 | **08** | `08-mcp` | Model Context Protocol | `:8080/mcp` | JSON-RPC 2.0, AI Tools & Resources Integration |
 
 ## Khởi chạy & Kiểm thử
+
 ```bash
 # Khởi chạy toàn bộ hệ thống (Web UI tại http://localhost:8080)
 ./mvnw spring-boot:run
 ```
-*Chi tiết các lệnh kiểm thử (cURL, grpcurl, Postman Native, raw JSON-RPC payload) được đặt trực tiếp trong file `README.md` / `<protocol>.md` của từng package tương ứng.*
+
+* Chi tiết các payload mẫu và lệnh kiểm thử (cURL, grpcurl, netcat `nc`, Postman Native, raw JSON-RPC) được đặt trực tiếp trong file doc kỹ thuật của từng module (vd: `socket.md`, `mqtt.md`, `grpc.md`).
+* Giao diện tương tác trực quan (Web UI Dashboard) sẵn sàng tại `http://localhost:8080/` cho tất cả các giao thức đã hoàn thiện.
